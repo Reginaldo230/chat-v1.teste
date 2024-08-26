@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat de Áudio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1d1f21;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        .chat-container {
+            max-width: 700px;
+            margin: 5px auto;
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #2a2c2e;
+            height: 92vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+ 
+        .message.user {
+          width: 650px;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            clear: both;
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            background-color: #005b96;
+            color: white;
+            margin-left: auto;
+            border-top-right-radius: 0;
+            text-align: left;
+        }
+        
+        .message.other {
+            align-self: flex-start;
+            background-color: #3a3d41;
+            color: white;
+            margin-right: auto;
+            overflow-y: auto;
+            border-top-left-radius: 0;
+            text-align: left;
+        }
+        
+        .message .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-family: serif;
+            font-weight: bold; 
+        }
+        
+        .message.user .user-info {
+            justify-content: flex-end;
+        }
+        
+        .message.other .user-info {
+            justify-content: flex-start;
+        }
+        
+        .message .user-info img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            margin-right: 8px;
+            margin-right: auto;
+        }
+        
+        .message img {
+          height: 250px;
+        }
+        
+        .message.user .user-info img {
+            margin-left: auto;
+            margin-left: 8px;
+        }
+        
+        .message .timestamp {
+            font-size: 0.8em;
+            color: #ccc;
+        }
+        
+        .message.user .timestamp {
+            text-align: right;
+        }
+        
+        .message.other .timestamp {
+            text-align: left;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .message-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .message-header .username {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .message-header .time {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .input-group {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #2a2c2e;
+            border-top: 1px solid #444;
+            display: flex;
+            margin-left: -5%;
+            align-items: center;
+        }
+
+        .input-group input {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            flex-grow: 1;
+            border-radius: 20px;
+            padding: 10px;
+            max-width: calc(100% - 0px);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .btn-icon {
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 0 15px;
+            background: none;
+            border: none;
+        }
+
+        .btn-icon:focus {
+            outline: none;
+        }
+
+        #recording-display {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            color: #f00;
+            padding: 10px 0;
+        }
+
+        #timer {
+            font-size: 1.5rem;
+        }
+
+        .custom-audio {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #3a3d41;
+            padding: 5px 10px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .custom-audio button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .custom-audio button:focus {
+            outline: none;
+        }
+
+        .custom-audio input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            margin: 0 10px;
+            background-color: #444;
+        }
+
+        .custom-audio input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .custom-audio input[type="range"]::-moz-range-thumb {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div id="chat-box" class="chat-box"></div>
+
+    <div id="recording-display">
+        <span>Gravando... <span id="timer">0:00</span></span>
+        <button id="stop-btn" class="btn-icon"><i class="fas fa-stop"></i></button>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="message-input" class="form-control" placeholder="Digite sua mensagem...">
+        <button id="file-btn" class="btn-icon"><i class="fas fa-paperclip"></i></button>
+        <button id="audio-btn" class="btn-icon"><i class="fas fa-microphone"></i></button>
+        <button id="send-btn" class="btn-icon" style="display: none;"><i class="fas fa-paper-plane"></i></button>
+    </div>
+    <input type="file" id="file-input" style="display: none;">
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDc-bH-jXQUpeG22gC7Rn2llgVHai8hcjk",
+        authDomain: "fire-project-f47ca.firebaseapp.com",
+        projectId: "fire-project-f47ca",
+        storageBucket: "fire-project-f47ca.appspot.com",
+        messagingSenderId: "781023925409",
+        appId: "1:781023925409:web:5f22fc3d50de1dbdda4ce0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const audioBtn = document.getElementById('audio-btn');
+        const sendBtn = document.getElementById('send-btn');
+        const recordingDisplay = document.getElementById('recording-display');
+        const stopBtn = document.getElementById('stop-btn');
+        const timerDisplay = document.getElementById('timer');
+        const fileInput = document.getElementById('file-input');
+        const fileBtn = document.getElementById('file-btn');
+
+        let currentUser;
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordingTime = 0;
+        let timerInterval;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadMessages();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        function loadMessages() {
+            const messagesRef = ref(database, 'messages');
+            onValue(messagesRef, (snapshot) => {
+                chatBox.innerHTML = ''; 
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    displayMessage(data);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        function displayMessage(data) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            if (data.uid === currentUser.uid) {
+                messageDiv.classList.add('user');
+            } else {
+                messageDiv.classList.add('other');
+            }
+
+            const userInfoDiv = document.createElement('div');
+            userInfoDiv.classList.add('user-info');
+
+            const userImg = document.createElement('img');
+            userImg.src = data.photoURL || 'default-avatar.png'; 
+            userInfoDiv.appendChild(userImg);
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = data.username;
+            userInfoDiv.appendChild(usernameSpan);
+
+            messageDiv.appendChild(userInfoDiv);
+
+            if (data.type === 'file') {
+                const imgElement = document.createElement('img');
+                imgElement.src = data.fileUrl;
+                imgElement.alt = data.fileName;
+                imgElement.style.maxWidth = '100%';
+                messageDiv.appendChild(imgElement);
+            } else if (data.type === 'audio') {
+                const audioElement = document.createElement('audio');
+                audioElement.controls = true;
+                audioElement.src = data.audioUrl;
+
+                const customAudioDiv = document.createElement('div');
+                customAudioDiv.classList.add('custom-audio');
+
+                const playButton = document.createElement('button');
+                playButton.innerHTML = '<i class="fas fa-play"></i>';
+                customAudioDiv.appendChild(playButton);
+
+                const progressBar = document.createElement('input');
+                progressBar.type = 'range';
+                progressBar.min = '0';
+                progressBar.value = '0';
+                customAudioDiv.appendChild(progressBar);
+
+                const currentTimeSpan = document.createElement('span');
+                currentTimeSpan.textContent = '0:00';
+                customAudioDiv.appendChild(currentTimeSpan);
+
+                playButton.addEventListener('click', () => {
+                    if (audioElement.paused) {
+                        audioElement.play();
+                        playButton.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        audioElement.pause();
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                });
+
+                audioElement.addEventListener('timeupdate', () => {
+                    progressBar.value = (audioElement.currentTime / audioElement.duration) * 100;
+                    currentTimeSpan.textContent = formatTime(audioElement.currentTime);
+                });
+
+                progressBar.addEventListener('input', () => {
+                    audioElement.currentTime = (progressBar.value / 100) * audioElement.duration;
+                });
+
+                audioElement.addEventListener('ended', () => {
+                    playButton.innerHTML = '<i class="fas fa-play"></i>';
+                });
+
+                messageDiv.appendChild(customAudioDiv);
+            } else {
+                const textSpan = document.createElement('span');
+                textSpan.textContent = data.message;
+                messageDiv.appendChild(textSpan);
+            }
+
+            const timestampDiv = document.createElement('div');
+            timestampDiv.classList.add('timestamp');
+            timestampDiv.textContent = new Date(data.timestamp).toLocaleTimeString();
+            messageDiv.appendChild(timestampDiv);
+
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message !== '') {
+                const messageRef = push(ref(database, 'messages'));
+                set(messageRef, {
+                    uid: currentUser.uid,
+                    username: currentUser.displayName,
+                    photoURL: currentUser.photoURL,
+                    type: 'text',
+                    message: message,
+                    timestamp: Date.now()
+                });
+                messageInput.value = '';
+            }
+        }
+
+        function sendFileMessage(file) {
+            const fileName = `${currentUser.uid}_${Date.now()}_${file.name}`;
+            const storageReference = storageRef(storage, 'chat_files/' + fileName);
+
+            uploadBytes(storageReference, file).then((snapshot) => {
+                getDownloadURL(snapshot.ref).then((url) => {
+                    const messageRef = push(ref(database, 'messages'));
+                    set(messageRef, {
+                        uid: currentUser.uid,
+                        username: currentUser.displayName,
+                        photoURL: currentUser.photoURL,
+                        type: 'file',
+                        fileName: file.name,
+                        fileUrl: url,
+                        timestamp: Date.now()
+                    });
+                });
+            }).catch((error) => {
+                console.error('Erro ao fazer upload da imagem:', error);
+            });
+        }
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                recordingDisplay.style.display = 'flex';
+                recordingTime = 0;
+                timerInterval = setInterval(() => {
+                    recordingTime++;
+                    timerDisplay.textContent = formatTime(recordingTime);
+                }, 1000);
+
+                mediaRecorder.addEventListener('dataavailable', (event) => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    clearInterval(timerInterval);
+                    recordingDisplay.style.display = 'none';
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    audioChunks = [];
+                    const audioUrl = URL.createObjectURL(audioBlob);
+
+                    const audioName = `${currentUser.uid}_${Date.now()}.mp3`;
+                    const audioRef = storageRef(storage, 'chat_audios/' + audioName);
+
+                    uploadBytes(audioRef, audioBlob).then((snapshot) => {
+                        getDownloadURL(snapshot.ref).then((url) => {
+                            const messageRef = push(ref(database, 'messages'));
+                            set(messageRef, {
+                                uid: currentUser.uid,
+                                username: currentUser.displayName,
+                                photoURL: currentUser.photoURL,
+                                type: 'audio',
+                                audioUrl: url,
+                                timestamp: Date.now()
+                            });
+                        });
+                    }).catch((error) => {
+                        console.error('Erro ao fazer upload do áudio:', error);
+                    });
+                });
+            });
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        audioBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            } else {
+                startRecording();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.trim() !== '') {
+                sendBtn.style.display = 'block';
+                audioBtn.style.display = 'none';
+            } else {
+                sendBtn.style.display = 'none';
+                audioBtn.style.display = 'block';
+            }
+        });
+
+        fileBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                sendFileMessage(file);
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        });
+    });
+</script>
+</body>
+</html>
